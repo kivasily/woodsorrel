@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>𝑊𝑜𝑜𝑑 𝑆𝑜𝑟𝑟𝑒𝑙 | Flood</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fafafa;
+      --text: #111111;
+      --text-muted: #555555;
+      --emerald: #059669;
+      --emerald-hover: #047857;
+      --glass: rgba(255, 255, 255, 0.55);
+      --glass-border: rgba(0, 0, 0, 0.06);
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+      --radius: 16px;
+      --nav-height: 64px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: var(--nav-height);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ========== CUSTOM SCROLLBAR (everywhere) ========== */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(5, 150, 105, 0.35);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(5, 150, 105, 0.55);
+    }
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(5, 150, 105, 0.35) transparent;
+    }
+
+    /* ========== ANIMATED WAVE BACKGROUND (bottom, clean) ========== */
+    .wave-bg {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 38vh;
+      z-index: -1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    /* Base solid-ish glow from the very bottom edge */
+    .wave-bg::before {
+      content: '';
+      position: absolute;
+      left: -10%;
+      right: -10%;
+      bottom: 0;
+      height: 100%;
+      background:
+        /* Stronger core from bottom */
+        linear-gradient(to top,
+          rgba(5, 150, 105, 0.22) 0%,
+          rgba(16, 185, 129, 0.16) 18%,
+          rgba(52, 211, 153, 0.10) 40%,
+          rgba(6, 95, 70, 0.05) 65%,
+          transparent 100%
+        ),
+        /* Soft side accents that stay near bottom */
+        radial-gradient(ellipse 90% 55% at 15% 100%, rgba(16, 185, 129, 0.20) 0%, transparent 60%),
+        radial-gradient(ellipse 80% 50% at 85% 100%, rgba(4, 120, 87, 0.18) 0%, transparent 55%),
+        radial-gradient(ellipse 70% 45% at 50% 100%, rgba(110, 231, 183, 0.14) 0%, transparent 50%);
+      animation: wavePulse 16s ease-in-out infinite alternate;
+      transform-origin: center bottom;
+    }
+
+    .wave-bg::after {
+      content: '';
+      position: absolute;
+      left: -15%;
+      right: -15%;
+      bottom: 0;
+      height: 85%;
+      background:
+        radial-gradient(ellipse 100% 60% at 30% 100%, rgba(5, 150, 105, 0.15) 0%, transparent 58%),
+        radial-gradient(ellipse 90% 55% at 75% 100%, rgba(16, 185, 129, 0.13) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 50% 100%, rgba(52, 211, 153, 0.11) 0%, transparent 50%);
+      animation: wavePulse 20s ease-in-out infinite alternate-reverse;
+      transform-origin: center bottom;
+      opacity: 0.95;
+    }
+
+    @keyframes wavePulse {
+      0% {
+        transform: scaleX(1) scaleY(1);
+        filter: hue-rotate(0deg) brightness(1);
+      }
+      50% {
+        transform: scaleX(1.04) scaleY(1.06);
+        filter: hue-rotate(6deg) brightness(1.05);
+      }
+      100% {
+        transform: scaleX(0.98) scaleY(1.03);
+        filter: hue-rotate(-4deg) brightness(0.98);
+      }
+    }
+
+    /* Clean upward fade so content stays readable and no floating blobs */
+    .wave-fade {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 42vh;
+      z-index: -1;
+      pointer-events: none;
+      background: linear-gradient(to top,
+        rgba(250, 250, 250, 0) 0%,
+        rgba(250, 250, 250, 0.25) 25%,
+        rgba(250, 250, 250, 0.65) 55%,
+        rgba(250, 250, 250, 0.92) 80%,
+        var(--bg) 100%
+      );
+    }
+
+    /* ========== NAVBAR ========== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--nav-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-bottom: 1px solid var(--glass-border);
+      z-index: 1000;
+    }
+
+    .nav-logo {
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 8px;
+      transition: color 0.2s ease, background 0.2s ease;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--emerald);
+      background: rgba(5, 150, 105, 0.08);
+    }
+
+    /* ========== SECTIONS ========== */
+    section {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 80px 24px 40px;
+      position: relative;
+      z-index: 1;
+    }
+
+    #home {
+      padding-top: calc(var(--nav-height) + 60px);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 5vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin-bottom: 40px;
+    }
+
+    /* Video container */
+    .video-wrapper {
+      width: 100%;
+      max-width: 680px;
+      margin: 0 auto 60px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: #111;
+      box-shadow: var(--shadow);
+      aspect-ratio: 21 / 9;
+      position: relative;
+    }
+
+    .video-wrapper video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .video-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+      color: #777;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .video-placeholder small {
+      opacity: 0.55;
+      margin-top: 8px;
+      font-size: 0.8rem;
+    }
+
+    /* ========== INFO ========== */
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+
+    .info-text {
+      color: var(--text-muted);
+      margin-bottom: 28px;
+      font-size: 0.95rem;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(16px) saturate(160%);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 12px 22px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow);
+    }
+
+    .btn:hover {
+      border-color: var(--emerald);
+      color: var(--emerald);
+      background: rgba(5, 150, 105, 0.07);
+    }
+
+    /* ========== MEMBERS ========== */
+    .members-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .member-card {
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(16px) saturate(160%);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 20px 12px;
+      text-align: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .member-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .member-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+      margin: 0 auto 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .member-name {
+      font-weight: 500;
+      font-size: 0.9rem;
+      margin-bottom: 4px;
+    }
+
+    .member-role {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .member-role.owner {
+      color: var(--emerald);
+      font-weight: 500;
+    }
+
+    /* ========== CONTACTS ========== */
+    .contacts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    .contact-link {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 500;
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(16px) saturate(160%);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .contact-link:hover {
+      color: var(--emerald);
+      border-color: var(--emerald);
+      background: rgba(5, 150, 105, 0.05);
+    }
+
+    .contact-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      background: rgba(5, 150, 105, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--emerald);
+      flex-shrink: 0;
+      letter-spacing: -0.02em;
+    }
+
+    /* ========== MODALS (strong glass + no broken radius) ========== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(40px) saturate(200%);
+      -webkit-backdrop-filter: blur(40px) saturate(200%);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 52vh;
+      box-shadow: 
+        0 24px 64px rgba(0, 0, 0, 0.18),
+        0 0 0 1px rgba(255, 255, 255, 0.4) inset;
+      transform: scale(0.94) translateY(16px);
+      opacity: 0;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* keeps radius clean, scrollbar inside */
+    }
+
+    .modal-overlay.active .modal {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px 14px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.4);
+    }
+
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      appearance: none;
+      border: none;
+      background: transparent;
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .modal-close:hover {
+      color: var(--text);
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .modal-body {
+      padding: 18px 24px 28px;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .modal-body p {
+      margin-bottom: 12px;
+    }
+
+    .modal-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .owners-image-placeholder {
+      width: 72px;
+      height: 72px;
+      border-radius: 16px;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+      border: 2px solid rgba(5, 150, 105, 0.2);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--emerald);
+    }
+
+    /* ========== FOOTER ========== */
+    footer {
+      text-align: center;
+      padding: 48px 24px 80px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 600px) {
+      .navbar {
+        padding: 0 16px;
+      }
+
+      .nav-logo {
+        font-size: 1rem;
+      }
+
+      .nav-links {
+        gap: 2px;
+      }
+
+      .nav-links a {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+      }
+
+      section {
+        padding: 60px 16px 32px;
+      }
+
+      #home {
+        padding-top: calc(var(--nav-height) + 40px);
+      }
+
+      .video-wrapper {
+        aspect-ratio: 16 / 9;
+        margin-bottom: 40px;
+      }
+
+      .members-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .modal {
+        max-height: 62vh;
+        border-radius: 16px;
+      }
+
+      .wave-bg {
+        height: 34vh;
+      }
+      .wave-fade {
+        height: 38vh;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .nav-links a {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Animated emerald wave background -->
+  <div class="wave-bg" aria-hidden="true"></div>
+  <div class="wave-fade" aria-hidden="true"></div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="#home" class="nav-logo">𝑊𝑜𝑜𝑑 𝑆𝑜𝑟𝑟𝑒𝑙 <i>| Flood</i></a>
+    <ul class="nav-links">
+      <li><a href="#home" data-section="home">Главная</a></li>
+      <li><a href="#info" data-section="info">Инфо</a></li>
+      <li><a href="#members" data-section="members">Участники</a></li>
+      <li><a href="#contacts" data-section="contacts">Контакты</a></li>
+    </ul>
+  </nav>
+
+  <!-- HOME -->
+  <section id="home">
+    <h1>𝑊𝑜𝑜𝑑 𝑆𝑜𝑟𝑟𝑒𝑙</h1>
+    <p class="subtitle">Небольшой уютный фандом по Genshin Impact, Монологу Фармацевта, Alien Stage.</p>
+
+    <div class="video-wrapper">
+      <video id="eyes-video" muted loop playsinline poster="" style="display:none;">
+        <source src="eyes.mp4" type="video/mp4">
+      </video>
+      <div class="video-placeholder" id="video-placeholder">
+        Короткая нарезка видео персонажей
+        <small>Если вы видите это, произошла ошибка, или ваш интернет очень медленный.</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- INFO -->
+  <section id="info">
+    <h2>Инфо</h2>
+    <p class="info-text">
+      Небольшой уютный флуд по Genshin Impact, The Apothecary Diaries и Alien Stage в ТГ. Здесь можно обсуждать лор, персонажей, игры и фильмы. В общем: все, что угодно! Без негатива и с хорошим настроением. Общаемся на Русском языке.
+    </p>
+    <div class="btn-group">
+      <button class="btn" onclick="openModal('rules')">Правила</button>
+      <button class="btn" onclick="openModal('owners')">Владельцы</button>
+    </div>
+  </section>
+
+  <!-- MEMBERS -->
+  <section id="members">
+    <h2>Участники</h2>
+    <p class="info-text">Всего 5 человек</p>
+    <div class="members-grid">
+      <div class="member-card">
+        <div class="member-avatar"><img src="Skirk.webp" width="120"></div>
+        <div class="member-name">@Anixight</div>
+        <div class="member-role owner">Владелец | Скирк</div>
+      </div>
+      <div class="member-card">
+        <div class="member-avatar"><img src="furina.png" width="60"></div>
+        <div class="member-name">@Mirkoooooooooo</div>
+        <div class="member-role owner">Совладелец | Фурина</div>
+      </div>
+      <div class="member-card">
+        <div class="member-avatar"><img src="neuvi.png" width="60"></div>
+        <div class="member-name">@Kivasily</div>
+        <div class="member-role owner">Совладелец | Нёвилетт</div>
+      </div>
+      <div class="member-card">
+        <div class="member-avatar"><img src="pantalone.png" width="60"></div>
+        <div class="member-name">@err1941</div>
+        <div class="member-role">Панталоне</div>
+      </div>
+      <div class="member-card">
+        <div class="member-avatar"><img src="ivan.png" width="60"></div>
+        <div class="member-name">@BlackSorrow3</div>
+        <div class="member-role">Иван</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACTS -->
+  <section id="contacts">
+    <h2>Контакты</h2>
+    <div class="contacts-list">
+      <a href="https://t.me/WoodSorrelInfo" class="contact-link" target="_blank" rel="noopener">
+        <div class="contact-icon">TG</div>
+        <div>
+          <div>Канал правил</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);font-weight:400;">Правила чата</div>
+        </div>
+      </a>
+      <a href="https://t.me/Anixight" class="contact-link" target="_blank" rel="noopener">
+        <div class="contact-icon">DM</div>
+        <div>
+          <div>Личка владельца</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);font-weight:400;">По вопросам и предложениям</div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    Genshin Flood · 2026
+  </footer>
+
+  <!-- MODAL: RULES -->
+  <div class="modal-overlay" id="modal-rules" onclick="closeModalOnOverlay(event, 'rules')">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Правила</div>
+        <button class="modal-close" onclick="closeModal('rules')" aria-label="Закрыть">×</button>
+      </div>
+      <div class="modal-body">
+        <p>1. Уважайте друг друга. Токсичность, оскорбления и травля запрещены.</p>
+        <p>2. Флуд — это хорошо, но не превращайте чат в помойку. Спам стикерами и медиа без меры не приветствуется.</p>
+        <p>3. Споры по лору и билдам приветствуются, но без перехода на личности.</p>
+        <p>4. Контент 18+ — только по согласию всех и в меру.</p>
+        <p>5. Решения владельцев окончательны. Если что-то не нравится — можно обсудить спокойно.</p>
+        <p style="margin-top:16px;font-size:0.85rem;opacity:0.8;">Правила могут дополняться.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: OWNERS -->
+  <div class="modal-overlay" id="modal-owners" onclick="closeModalOnOverlay(event, 'owners')">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Владельцы</div>
+        <button class="modal-close" onclick="closeModal('owners')" aria-label="Закрыть">×</button>
+      </div>
+      <div class="modal-body" style="text-align:center;">
+        <div class="owners-image-placeholder">OWN</div>
+        <p style="color:var(--text);font-weight:500;margin-bottom:8px;">Трое владельцев</p>
+        <p>Чат создан и поддерживается тремя людьми. Мы следим за атмосферой, помогаем с идеями активностей и решаем спорные моменты.</p>
+        <p style="margin-top:12px;">Если есть идеи, жалобы или предложения — пишите в личку любому из владельцев.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Modal logic
+    function openModal(id) {
+      const overlay = document.getElementById('modal-' + id);
+      if (overlay) {
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    function closeModal(id) {
+      const overlay = document.getElementById('modal-' + id);
+      if (overlay) {
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+    }
+
+    function closeModalOnOverlay(event, id) {
+      if (event.target === event.currentTarget) {
+        closeModal(id);
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.active').forEach(el => {
+          el.classList.remove('active');
+        });
+        document.body.style.overflow = '';
+      }
+    });
+
+    // Video placeholder
+    const video = document.getElementById('eyes-video');
+    const placeholder = document.getElementById('video-placeholder');
+    if (video) {
+      video.addEventListener('loadeddata', () => {
+        video.style.display = 'block';
+        if (placeholder) placeholder.style.display = 'none';
+        video.play().catch(() => {});
+      });
+    }
+
+    // Improved active nav — works correctly for contacts at the bottom
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-links a');
+
+    function updateActiveNav() {
+      const scrollPos = window.scrollY + 120; // offset for fixed navbar
+      let current = 'home';
+
+      sections.forEach(section => {
+        const top = section.offsetTop;
+        const height = section.offsetHeight;
+        if (scrollPos >= top && scrollPos < top + height) {
+          current = section.id;
+        }
+      });
+
+      // Special case: if near the very bottom, force contacts
+      const docHeight = document.documentElement.scrollHeight;
+      const winHeight = window.innerHeight;
+      if (window.scrollY + winHeight >= docHeight - 80) {
+        current = 'contacts';
+      }
+
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('data-section') === current) {
+          link.classList.add('active');
+        }
+      });
+    }
+
+    window.addEventListener('scroll', updateActiveNav, { passive: true });
+    window.addEventListener('resize', updateActiveNav);
+    updateActiveNav();
+
+    // Also update on click (instant feedback)
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        setTimeout(updateActiveNav, 50);
+      });
+    });
+  </script>
+</body>
+</html>
